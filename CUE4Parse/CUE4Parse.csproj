@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <LangVersion>default</LangVersion>
     <Nullable>enable</Nullable>
@@ -27,14 +27,17 @@
     <BuildInParallel>false</BuildInParallel> <!-- we can't run 2 cmake build at same time -->
     <CMakeProject>../CUE4Parse-Natives/</CMakeProject>
     <CMakeBuildDir>$(CMakeProject)builddir</CMakeBuildDir>
+    <CMakePath Condition="'$(CMakePath)' == ''">$(MSBuildToolsPath)\..\..\..\..\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe</CMakePath>
   </PropertyGroup>
 
   <Target Name="Build-Natives" BeforeTargets="BeforeBuild">
+    <Message Importance="high" Condition="!Exists('$(CMakePath)')"
+             Text="CMake.exe could not be found at '$(CMakePath)'. Set CMakePath in the environment and rebuild." />
     <MakeDir Directories="$(CMakeBuildDir)" Condition="!Exists('$(CMakeBuildDir)')" />
-    <Exec Command="cmake .." ConsoleToMSBuild="true" WorkingDirectory="$(CMakeBuildDir)">
+    <Exec Command="&quot;$(CMakePath)&quot; .." ConsoleToMSBuild="true" WorkingDirectory="$(CMakeBuildDir)">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
-    <Exec Command="cmake --build . --config $(Configuration) --target install" ConsoleToMSBuild="true" WorkingDirectory="$(CMakeBuildDir)">
+    <Exec Command="&quot;$(CMakePath)&quot; --build . --config $(Configuration) --target install" ConsoleToMSBuild="true" WorkingDirectory="$(CMakeBuildDir)">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
   </Target>
