@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <LangVersion>default</LangVersion>
     <Nullable>enable</Nullable>
@@ -12,6 +12,15 @@
     <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>C# Parser for Unreal Engine packages &amp; assets</Description>
+    <PackageProjectUrl>https://github.com/BanjoByTheBay/CUE4Parse</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/BanjoByTheBay/CUE4Parse.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <VersionSuffix>banjobythebay</VersionSuffix>
+  </PropertyGroup>
+    
   <ItemGroup>
     <PackageReference Include="DotNetZip" Version="1.16.0" />
     <PackageReference Include="LZMA-SDK" Version="19.0.0" />
@@ -27,6 +36,8 @@
     <BuildInParallel>false</BuildInParallel> <!-- we can't run 2 cmake build at same time -->
     <CMakeProject>../CUE4Parse-Natives/</CMakeProject>
     <CMakeBuildDir>$(CMakeProject)builddir</CMakeBuildDir>
+    <Version>$(VersionPrefix)</Version>
+    <Authors>$(AssemblyName)</Authors>
   </PropertyGroup>
 
   <Target Name="Build-Natives" BeforeTargets="BeforeBuild">
