@@ -53,17 +53,25 @@
   <ItemGroup>
     <Content Include="..\CUE4Parse-Natives\bin\$(Configuration)\CUE4Parse-Natives.dll" Condition=" '$(OS)' == 'Windows_NT' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>content;contentFiles</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
     <Content Include="..\CUE4Parse-Natives\bin\$(Configuration)\CUE4Parse-Natives.pdb" Condition=" '$(Configuration)' == 'Debug' And  '$(OS)' == 'Windows_NT' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>content;contentFiles</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
 
     <Content Include="$(CMakeBuildDir)/CUE4Parse-Natives.so" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>content;contentFiles</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
 
     <Content Include="$(CMakeBuildDir)/CUE4Parse-Natives.dylib" Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <PackagePath>content;contentFiles</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
   </ItemGroup>
 
