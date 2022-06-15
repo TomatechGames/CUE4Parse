@@ -9,6 +9,10 @@
     <IsPublishable>false</IsPublishable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <VersionPrefix>1.0.4</VersionPrefix>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

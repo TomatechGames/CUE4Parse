@@ -7,6 +7,10 @@
         <TargetFrameworks>net6.0</TargetFrameworks>
         <IsPublishable>false</IsPublishable>
     </PropertyGroup>
+
+    <PropertyGroup>
+      <VersionPrefix>1.0.4</VersionPrefix>
+    </PropertyGroup>
     
     <ItemGroup>
       <ProjectReference Include="..\CUE4Parse\CUE4Parse.csproj" />
