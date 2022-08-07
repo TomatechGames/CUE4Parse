@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 using CUE4Parse.UE4.Writers;
 using CUE4Parse.Utils;
 using static System.MathF;
@@ -61,8 +63,8 @@ namespace CUE4Parse.UE4.Objects.Core.Math
 
             if (tr > 0.0f)
             {
-                var invS = (tr + 1).InvSqrt();
-                W = 0.5f * (1f / invS);
+                var invS = 1.0f / Sqrt(tr + 1.0f);
+                W = 0.5f * (1.0f / invS);
                 s = 0.5f * invS;
 
                 X = (m.M12 - m.M21) * s;
@@ -77,24 +79,24 @@ namespace CUE4Parse.UE4.Objects.Core.Math
                 if (m.M11 > m.M00)
                     i = 1;
 
-                if (m.M22 > (i == 1 ? m.M11 : m.M00))
+                if (m.M22 > m[4*i+i])
                     i = 2;
 
                 var j = matrixNxt[i];
                 var k = matrixNxt[j];
 
-                s = (i switch { 0 => m.M00, 1 => m.M11, _ => m.M22}) - (j switch { 0 => m.M00, 1 => m.M11, _ => m.M22}) + 1.0f;
+                s = m[4*i+i] - m[4*j+j] - m[4*k+k] + 1.0f;
 
-                var invS = s.InvSqrt();
+                var invS = 1.0f / Sqrt(s);
 
                 Span<float> qt = stackalloc float[4];
-                qt[i] = 0.5f * (1f / invS);
+                qt[i] = 0.5f * (1.0f / invS);
 
                 s = 0.5f * invS;
 
-                qt[3] = (j switch {0 => k switch {0 => m.M00, 1 => m.M01, _ => m.M02}, 1 => k switch {0 => m.M10, 1 => m.M11, _ => m.M12}, _ => k switch {0 => m.M10, 1 => m.M11, _ => m.M12}}) - (k switch {0 => j switch {0 => m.M00, 1 => m.M01, _ => m.M02}, 1 => j switch {0 => m.M10, 1 => m.M11, _ => m.M12}, _ => j switch {0 => m.M10, 1 => m.M11, _ => m.M12}}) * s;
-                qt[j] = (i switch {0 => j switch {0 => m.M00, 1 => m.M01, _ => m.M02}, 1 => j switch {0 => m.M10, 1 => m.M11, _ => m.M12}, _ => j switch {0 => m.M10, 1 => m.M11, _ => m.M12}}) - (j switch {0 => i switch {0 => m.M00, 1 => m.M01, _ => m.M02}, 1 => i switch {0 => m.M10, 1 => m.M11, _ => m.M12}, _ => i switch {0 => m.M10, 1 => m.M11, _ => m.M12}}) * s;
-                qt[k] = (i switch {0 => k switch {0 => m.M00, 1 => m.M01, _ => m.M02}, 1 => k switch {0 => m.M10, 1 => m.M11, _ => m.M12}, _ => k switch {0 => m.M10, 1 => m.M11, _ => m.M12}}) - (k switch {0 => i switch {0 => m.M00, 1 => m.M01, _ => m.M02}, 1 => i switch {0 => m.M10, 1 => m.M11, _ => m.M12}, _ => i switch {0 => m.M10, 1 => m.M11, _ => m.M12}}) * s;
+                qt[3] = (m[4*j+k] - m[4*k+j]) * s;
+                qt[j] = (m[4*i+j] + m[4*j+i]) * s;
+                qt[k] = (m[4*i+k] + m[4*k+i]) * s;
 
                 X = qt[0];
                 Y = qt[1];
@@ -125,11 +127,21 @@ namespace CUE4Parse.UE4.Objects.Core.Math
 
         public bool IsIdentity(float tolerance = UnrealMath.SmallNumber) => Equals(Identity, tolerance);
 
+        public static Vector128<float> AsVector128(FQuat value)
+        {
+            return Unsafe.As<FQuat, Vector128<float>>(ref value);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FQuat operator *(FQuat a, FQuat b)
         {
-            var r = new FQuat();
+            // both yield different results idk why
+            if (Sse.IsSupported)
+            {
+                return UnrealMathSSE.VectorQuaternionMultiply2(a, b);
+            }
 
+            var r = new FQuat();
             var t0 = (a.Z - a.Y) * (b.Y - b.Z);
             var t1 = (a.W + a.X) * (b.W + b.X);
             var t2 = (a.W - a.X) * (b.Y + b.Z);
@@ -145,7 +157,6 @@ namespace CUE4Parse.UE4.Objects.Core.Math
             r.Y = t2 + t9 - t7;
             r.Z = t3 + t9 - t6;
             r.W = t0 + t9 - t5;
-
             return r;
         }
 
