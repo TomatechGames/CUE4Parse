@@ -17,7 +17,7 @@ using Ionic.Crc;
 using Newtonsoft.Json;
 using Serilog;
 
-namespace CUE4Parse.FN.Assets.Exports
+namespace CUE4Parse.GameTypes.FN.Assets.Exports
 {
     // GUID: new(0xA76CBC6B, 0x51634CEE, 0x887E17DE, 0x463D4395)
     public enum ELevelSaveRecordVersion : short
@@ -53,6 +53,9 @@ namespace CUE4Parse.FN.Assets.Exports
         AddedDataHeaderSize,
         AddedCrossReferenceSaving,
         SpawningActorsWithConsistentName,
+        UpdatePackageNameFromIslandTemplateId,
+        LargeWorldCoordinateSerializationChange,
+        SeasionTwentyTwoRelease,
 
         VersionPlusOne,
         LatestVersion = VersionPlusOne - 1
@@ -204,7 +207,8 @@ namespace CUE4Parse.FN.Assets.Exports
             if (ActorData != null && !bUsingRecordDataReferenceTable)
             {
                 var Ar = new FLevelSaveRecordArchive(new FAssetArchive(new FByteArchive("ActorData Reader", ActorData), owner), SaveVersion);
-                var flags = owner.Summary.PackageFlags; owner.Summary.PackageFlags &= ~EPackageFlags.PKG_UnversionedProperties;
+                var flags = owner.Summary.PackageFlags;
+                owner.Summary.PackageFlags &= ~EPackageFlags.PKG_UnversionedProperties;
                 var props = new FStructFallback(Ar);
                 owner.Summary.PackageFlags = flags; // restore flags
                 return props;
@@ -303,7 +307,7 @@ namespace CUE4Parse.FN.Assets.Exports
                 ActorGuid = Ar.Read<FGuid>();
             }
 
-            Transform = Ar.Read<FTransform>();
+            Transform = new FTransform(Ar);
         }
     }
 
@@ -317,7 +321,7 @@ namespace CUE4Parse.FN.Assets.Exports
         public FLevelStreamedDeleteActorRecord(FAssetArchive Ar)
         {
             ActorId = Ar.ReadFName();
-            Transform = Ar.Read<FTransform>();
+            Transform = new FTransform(Ar);
             ActorClass = new FSoftObjectPath(Ar);
             OwningLevel = new FSoftObjectPath(Ar);
         }
@@ -370,7 +374,7 @@ namespace CUE4Parse.FN.Assets.Exports
         public bool bCompressed;
         public FVector Center;
         public FVector HalfBoundsExtent;
-        public FRotator Rotation;
+        public FRotator? Rotation;
         public FVector Scale;
         public ulong LastTemplateID; // UnknownData01[0xC]
         public Dictionary<int, FActorTemplateRecord> TemplateRecords;
@@ -403,10 +407,9 @@ namespace CUE4Parse.FN.Assets.Exports
                 ActorData = new List<FStructFallback>();
                 foreach (var kv in GetOrDefault<UScriptMap>("TemplateRecords").Properties)
                 {
-                    var val = kv.Value.GetValue(typeof(FActorTemplateRecord));
-                    var templeteRecords = val is FActorTemplateRecord rec ? rec : null;
-                    if (templeteRecords is null) continue;
-                    ActorData.Add( templeteRecords.ReadActorData(Owner, SaveVersion));
+                    var val = kv.Value?.GetValue(typeof(FActorTemplateRecord));
+                    if (val is not FActorTemplateRecord templeteRecords) continue;
+                    ActorData.Add(templeteRecords.ReadActorData(Owner, SaveVersion));
                 }
             }
         }
@@ -524,7 +527,7 @@ namespace CUE4Parse.FN.Assets.Exports
 
             if (SaveVersion >= ELevelSaveRecordVersion.SwitchingToCoreSerialization)
             {
-                throw new NotImplementedException();  //base.Deserialize(wrappedAr, -1);
+                throw new NotImplementedException(); //base.Deserialize(wrappedAr, -1);
             }
             else
             {
@@ -557,9 +560,9 @@ namespace CUE4Parse.FN.Assets.Exports
 
         private void DeserializeLevelSaveRecordData(FLevelSaveRecordArchive Ar)
         {
-            Center = Ar.Read<FVector>();
-            HalfBoundsExtent = Ar.Read<FVector>();
-            Rotation = Ar.Read<FRotator>();
+            Center = new FVector(Ar);
+            HalfBoundsExtent = new FVector(Ar);
+            Rotation = new FRotator(Ar);
             LastTemplateID = Ar.Read<ulong>();
 
             var numTemplateRecords = Ar.Read<int>();
@@ -584,7 +587,7 @@ namespace CUE4Parse.FN.Assets.Exports
             }
 
             bRequiresGridPlacement = Ar.ReadBoolean();
-            Scale = Ar.Version >= ELevelSaveRecordVersion.AddingScale ? Ar.Read<FVector>() : FVector.OneVector;
+            Scale = Ar.Version >= ELevelSaveRecordVersion.AddingScale ? new FVector(Ar) : FVector.OneVector;
 
             if (Ar.Version >= ELevelSaveRecordVersion.AddedLevelStreamedDeleteRecord)
             {

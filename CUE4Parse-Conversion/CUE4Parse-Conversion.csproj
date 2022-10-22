@@ -17,6 +17,7 @@
 
   <PropertyGroup>
     <VersionPrefix>1.0.6</VersionPrefix>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -26,7 +27,7 @@
   <ItemGroup>
     <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0023" />
     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.0-alpha0023" />
-    <PackageReference Include="SkiaSharp" Version="2.88.1-preview.71" />
+    <PackageReference Include="SkiaSharp" Version="2.88.1" />
   </ItemGroup>
 
   <ItemGroup>
