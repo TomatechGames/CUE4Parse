@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Versions;
+using CUE4Parse.UE4.Writers;
 using CUE4Parse.Utils;
 
 namespace CUE4Parse.UE4.Objects.Core.Math
@@ -183,10 +184,17 @@ namespace CUE4Parse.UE4.Objects.Core.Math
                                                            System.Math.Abs(NormalizeAxis(Yaw - r.Yaw)) <= tolerance &&
                                                            System.Math.Abs(NormalizeAxis(Roll - r.Roll)) <= tolerance;
 
+        public void Serialize(FArchiveWriter Ar)
+        {
+            Ar.Write(Pitch);
+            Ar.Write(Yaw);
+            Ar.Write(Roll);
+        }
+
         public override bool Equals(object? obj) => obj is FRotator other && Equals(other, 0f);
 
         public override string ToString() => $"P={Pitch} Y={Yaw} R={Roll}";
 
-        public static implicit operator Vector3(FRotator r) => new(r.Roll, r.Yaw, r.Pitch);
+        public static implicit operator Vector3(FRotator r) => new(r.Pitch, r.Yaw, r.Roll);
     }
 }

@@ -174,6 +174,16 @@ namespace CUE4Parse.UE4.Objects.Core.Math
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FVector operator *(FVector a, float scale) => new(a.X * scale, a.Y * scale, a.Z * scale);
 
+        public static FVector operator *(FVector v, FQuat q)
+        {
+            var u = new FVector(q.X, q.Y, q.Z);
+            float s = q.W;
+
+            return 2.0f * DotProduct(u, v) * u
+                     + (s*s - DotProduct(u, u)) * v
+                     + 2.0f * s * CrossProduct(u, v);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static FVector operator *(float scale, FVector a) => a * scale;
 
@@ -419,6 +429,9 @@ namespace CUE4Parse.UE4.Objects.Core.Math
         public FVector ProjectOnToNormal(FVector normal) => normal * (this | normal);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly FVector ToMapVector() => new FVector { X = X, Y = Z, Z = Y };
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public FRotator ToOrientationRotator()
         {
             return new FRotator
@@ -545,6 +558,6 @@ namespace CUE4Parse.UE4.Objects.Core.Math
             Ar.Write(Z);
         }
 
-        public static implicit operator Vector3(FVector v) => new(v.X, v.Z, v.Y);
+        public static implicit operator Vector3(FVector v) => new(v.X, v.Y, v.Z);
     }
 }

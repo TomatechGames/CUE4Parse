@@ -17,6 +17,7 @@
 
   <PropertyGroup>
     <VersionPrefix>1.0.8</VersionPrefix>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
