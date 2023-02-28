@@ -35,7 +35,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Texture
         {
             base.Deserialize(Ar, validPos);
             ImportedSize = GetOrDefault<FIntPoint>(nameof(ImportedSize));
-            LightingGuid = GetOrDefault<FGuid>(nameof(LightingGuid));
+            LightingGuid = GetOrDefault(nameof(LightingGuid), new FGuid((uint) GetFullName().GetHashCode()));
             SRGB = GetOrDefault(nameof(SRGB), true);
             if (TryGetValue(out FName trigger, "LODGroup", "Filter") && !trigger.IsNone)
                 bRenderNearestNeighbor = trigger.Text.EndsWith("TEXTUREGROUP_Pixels2D", StringComparison.OrdinalIgnoreCase) ||
@@ -123,6 +123,30 @@ namespace CUE4Parse.UE4.Assets.Exports.Texture
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public FTexture2DMipMap? GetFirstMip() => Mips.FirstOrDefault(x => x.Data.Data != null);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public FTexture2DMipMap? GetMipByMaxSize(int maxSize)
+        {
+            foreach (var mip in Mips)
+            {
+                if ((mip.SizeX <= maxSize || mip.SizeY <= maxSize) && mip.Data.Data != null)
+                    return mip;
+            }
+
+            return GetFirstMip();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public FTexture2DMipMap? GetMipBySize(int sizeX, int sizeY)
+        {
+            foreach (var mip in Mips)
+            {
+                if (mip.SizeX == sizeX && mip.SizeY == sizeY && mip.Data.Data != null)
+                    return mip;
+            }
+
+            return GetFirstMip();
+        }
 
         public override void GetParams(CMaterialParams parameters)
         {

@@ -21,11 +21,10 @@ namespace CUE4Parse.UE4.Assets.Exports.Material
         public const string FallbackSpecularMasks = "PM_SpecularMasks";
         public const string FallbackEmissive = "PM_Emissive";
 
-
-        public const string RegexDiffuse = ".*(?:Diff|_Tex|_?Albedo|_Base_?Color).*|(?:_D|_DIF|_DM|_C|_CM)$";
+        public const string RegexDiffuse = ".*(?:Diff|_Tex|_?Albedo|_?Base_?Color).*|(?:_D|_DIF|_DM|_C|_CM)$";
         public const string RegexNormals = "^NO_|.*Norm.*|(?:_N|_NM|_NRM)$";
-        public const string RegexSpecularMasks = "^SP_|.*(?:Specu|_S_).*|(?:_S|_LP|_PAK)$";
-        public const string RegexEmissive = "^.*Emiss.*|(?:_E|_EM)$";
+        public const string RegexSpecularMasks = "^SP_|.*(?:Specu|_S_|MR|(?<!no)RM).*|(?:_S|_LP|_PAK)$";
+        public const string RegexEmissive = ".*Emiss.*|(?:_E|_EM)$";
 
         public bool HasTopDiffuse => HasTopTexture(Diffuse[0]);
         public bool HasTopNormals => HasTopTexture(Normals[0]);
@@ -47,37 +46,37 @@ namespace CUE4Parse.UE4.Assets.Exports.Material
             new []
             {
                 "Trunk_BaseColor", "ShadedDiffuse",
-                "Background Diffuse", "BG Diffuse Texture", "Diffuse", "Diffuse_1", "DiffuseTexture", "DiffuseMap", "Diffuse A", "Diffuse Top", "Diffuse Side", "Diffuse Base", "Diffuse Base Map", "DiffuseLayer1",
+                "Background Diffuse", "BG Diffuse Texture", "Diffuse", "Diffuse_1", "DiffuseTexture", "DiffuseMap", "Diffuse A", "Diffuse A Map", "Diffuse Top", "Diffuse Side", "Base Diffuse", "Diffuse Base", "Diffuse Base Map", "Diffuse Color Map", "DiffuseLayer1",
                 "Albedo", "ALB", "TextureAlbedo",
-                "Base Color Texture", "BaseColorTexture", "Base Color", "BaseColor", "Base Texture Color", "BaseColorA", "BC", "Color", "CO", "CO_", "CO_1", "Base_CO",
+                "Base Color Texture", "BaseColorTexture", "Base_Color", "Base Color", "BaseColor", "Base Texture Color", "BaseColorA", "BC", "Color", "CO", "CO_", "CO_1", "Base_CO",
                 "Tex", "Tex_Color", "TexColor", "Tex_BaseColor", "AlbedMap", "Tex_Colormap",
-                "Decal_Texture", "PetalDetailMap", "CliffTexture", "M1_T_BC"
+                "Decal_Texture", "PetalDetailMap", "CliffTexture", "M1_T_BC", "Skin Diffuse"
             },
-            new []{ "Background Diffuse 2", "Diffuse_Texture_2", "DiffuseLayer2", "Diffuse B", "BaseColorB", "CO_2", "M2_T_BC" },
-            new []{ "Background Diffuse 3", "Diffuse_Texture_3", "DiffuseLayer3", "Diffuse C", "BaseColorC", "CO_3", "M3_T_BC" },
-            new []{ "Background Diffuse 4", "Diffuse_Texture_4", "DiffuseLayer4", "Diffuse D", "BaseColorD", "CO_4", "M4_T_BC" },
-            new []{ "Background Diffuse 5", "Diffuse_Texture_5", "DiffuseLayer5", "Diffuse E", "BaseColorE", "CO_5", "M5_T_BC" },
-            new []{ "Background Diffuse 6", "Diffuse_Texture_6", "DiffuseLayer6", "Diffuse F", "BaseColorF", "CO_6", "M6_T_BC" },
-            new []{ "Background Diffuse 7", "Diffuse_Texture_7", "DiffuseLayer7", "Diffuse G", "BaseColorG", "CO_7", "M7_T_BC" },
-            new []{ "Background Diffuse 8", "Diffuse_Texture_8", "DiffuseLayer8", "Diffuse H", "BaseColorH", "CO_8", "M8_T_BC" }
+            new []{ "Background Diffuse 2", "Diffuse_Texture_2", "DiffuseLayer2", "Diffuse B", "Diffuse B Map", "BaseColorB", "CO_2", "M2_T_BC" },
+            new []{ "Background Diffuse 3", "Diffuse_Texture_3", "DiffuseLayer3", "Diffuse C", "Diffuse C Map", "BaseColorC", "CO_3", "M3_T_BC" },
+            new []{ "Background Diffuse 4", "Diffuse_Texture_4", "DiffuseLayer4", "Diffuse D", "Diffuse D Map", "BaseColorD", "CO_4", "M4_T_BC" },
+            new []{ "Background Diffuse 5", "Diffuse_Texture_5", "DiffuseLayer5", "Diffuse E", "Diffuse E Map", "BaseColorE", "CO_5", "M5_T_BC" },
+            new []{ "Background Diffuse 6", "Diffuse_Texture_6", "DiffuseLayer6", "Diffuse F", "Diffuse F Map", "BaseColorF", "CO_6", "M6_T_BC" },
+            new []{ "Background Diffuse 7", "Diffuse_Texture_7", "DiffuseLayer7", "Diffuse G", "Diffuse G Map", "BaseColorG", "CO_7", "M7_T_BC" },
+            new []{ "Background Diffuse 8", "Diffuse_Texture_8", "DiffuseLayer8", "Diffuse H", "Diffuse H Map", "BaseColorH", "CO_8", "M8_T_BC" }
         };
 
         public static readonly string[][] Normals = {
             new []
             {
                 "Trunk_Normal",
-                "Normals", "Normal", "NormalA", "NormalTexture", "Normal Texture", "NormalMap", "T_Normal", "Normals Top", "Normals Side", "Fallback Normal",
-                "Normal Base", "TextureNormal", "Tex_BakedNormal", "TexNor", "BakedNormalMap", "Base Texture Normal", "Normal Base Map",
+                "Normals", "Normal", "NormalA", "NormalTexture", "Normal Texture", "NormalMap", "Normal A Map", "T_Normal", "Normals Top", "Normals Side", "Fallback Normal",
+                "Base_Normal", "Base Normal", "Normal Base", "TextureNormal", "Tex_BakedNormal", "TexNor", "BakedNormalMap", "Base Texture Normal", "Normal Base Map",
                 "NM", "NM_1", "Base_NM", "NRM", "T_NRM", "M1_T_NRM", "Base NRM", "NRM Base",
-                "Texture A Normal", "CliffNormal"
+                "Texture A Normal", "CliffNormal", "Skin Normal"
             },
-            new []{ "Normals_Texture_2", "Texture B Normal", "NormalB", "NM_2", "M2_T_NRM" },
-            new []{ "Normals_Texture_3", "Texture C Normal", "NormalC", "NM_3", "M3_T_NRM" },
-            new []{ "Normals_Texture_4", "Texture D Normal", "NormalD", "NM_4", "M4_T_NRM" },
-            new []{ "Normals_Texture_5", "Texture E Normal", "NormalE", "NM_5", "M5_T_NRM" },
-            new []{ "Normals_Texture_6", "Texture F Normal", "NormalF", "NM_6", "M6_T_NRM" },
-            new []{ "Normals_Texture_7", "Texture G Normal", "NormalG", "NM_7", "M7_T_NRM" },
-            new []{ "Normals_Texture_8", "Texture H Normal", "NormalH", "NM_8", "M8_T_NRM" }
+            new []{ "Normals_Texture_2", "Texture B Normal", "NormalB", "Normal B Map", "NM_2", "M2_T_NRM" },
+            new []{ "Normals_Texture_3", "Texture C Normal", "NormalC", "Normal C Map", "NM_3", "M3_T_NRM" },
+            new []{ "Normals_Texture_4", "Texture D Normal", "NormalD", "Normal D Map", "NM_4", "M4_T_NRM" },
+            new []{ "Normals_Texture_5", "Texture E Normal", "NormalE", "Normal E Map", "NM_5", "M5_T_NRM" },
+            new []{ "Normals_Texture_6", "Texture F Normal", "NormalF", "Normal F Map", "NM_6", "M6_T_NRM" },
+            new []{ "Normals_Texture_7", "Texture G Normal", "NormalG", "Normal G Map", "NM_7", "M7_T_NRM" },
+            new []{ "Normals_Texture_8", "Texture H Normal", "NormalH", "Normal H Map", "NM_8", "M8_T_NRM" }
         };
 
         public static readonly string[][] SpecularMasks = {
@@ -85,8 +84,9 @@ namespace CUE4Parse.UE4.Assets.Exports.Material
             {
                 "Trunk_Specular", "PackedTexture",
                 "SpecularMasks", "Specular", "SpecMap", "T_Specular", "Specular Top", "Specular Side",
-                "MG", "ORM", "MRAE", "MRAS", "MRA", "MRA A", "MRS", "LP", "LP_1", "Base_LP",
-                "TextureRMA", "Tex_MultiMask", "Tex_Multi", "TexMRC", "TexMRA", "TexRCN", "MultiMaskMap", "Base Texture RMAO",
+                "MG", "ORM", "MRAE", "MRAS", "MRAO", "MRA", "MRA A", "MRS", "LP", "LP_1", "Base_LP",
+                "TextureRMA", "Tex_MultiMask", "Tex_Multi", "TexMRC", "TexMRA", "TexRCN", "MultiMaskMap", "MRO Map", "MROA Map",
+                "Base_SRO", "Base Texture RMAO", "Skin SRXO", "SRXO_Mask", "SRXO", "SROA", "SR", "SRO Map",
                 "Pack", "PAK", "T_PAK", "M1_T_PAK",
                 "Cliff Spec Texture", "PhysicalMap", "KizokMap"
             },
@@ -147,7 +147,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Material
         public readonly Dictionary<string, UUnrealMaterial> Textures = new ();
         public readonly Dictionary<string, FLinearColor> Colors = new ();
         public readonly Dictionary<string, float> Scalars = new ();
-        public readonly Dictionary<string, bool> Switchs = new ();
+        public readonly Dictionary<string, bool> Switches = new ();
         public readonly Dictionary<string, object?> Properties = new ();
 
         public IEnumerable<UUnrealMaterial> GetTextures(IEnumerable<string> names)
@@ -286,6 +286,25 @@ namespace CUE4Parse.UE4.Assets.Exports.Material
 
                 Properties[property.Name.Text] = property.Tag?.GenericValue;
             }
+        }
+
+        public bool VerifyTexture(string name, UTexture texture, bool appendToDictionary = true, EMaterialSamplerType samplerType = EMaterialSamplerType.SAMPLERTYPE_Color)
+        {
+            var fallback = "";
+            if (Regex.IsMatch(name, RegexDiffuse, RegexOptions.IgnoreCase))
+                fallback = FallbackDiffuse;
+            else if (samplerType == EMaterialSamplerType.SAMPLERTYPE_Normal ||
+                     Regex.IsMatch(name, RegexNormals, RegexOptions.IgnoreCase))
+                fallback = FallbackNormals;
+            else if (Regex.IsMatch(name, RegexSpecularMasks, RegexOptions.IgnoreCase))
+                fallback = FallbackSpecularMasks;
+            else if (Regex.IsMatch(name, RegexEmissive, RegexOptions.IgnoreCase))
+                fallback = FallbackEmissive;
+
+            var ret = !string.IsNullOrEmpty(fallback);
+            if (ret) Textures[fallback] = texture;
+            if (appendToDictionary) Textures[name] = texture;
+            return ret;
         }
 
         private bool HasTopTexture(params string[] names)

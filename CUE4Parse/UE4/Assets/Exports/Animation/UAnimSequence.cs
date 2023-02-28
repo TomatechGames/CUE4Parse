@@ -43,6 +43,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
         public FTransform[]? RetargetSourceAssetReferencePose;
 
         public bool bUseRawDataOnly;
+        public bool EnsuredCurveData;
 
         public override void Deserialize(FAssetArchive Ar, long validPos)
         {
@@ -118,6 +119,8 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
                     bUseRawDataOnly = Ar.ReadBoolean();
                 }
             }
+
+            EnsuredCurveData = EnsureCurveData();
         }
 
         protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
@@ -155,7 +158,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
                 writer.WriteValue(CompressedCurveByteStream);
             }*/
 
-            if (EnsureCurveData())
+            if (EnsuredCurveData)
             {
                 writer.WritePropertyName("CompressedCurveData");
                 serializer.Serialize(writer, CompressedCurveData);

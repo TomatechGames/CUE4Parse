@@ -16,25 +16,21 @@ namespace CUE4Parse_Conversion.Animations
     {
         public readonly List<Anim> AnimSequences;
 
-        public AnimExporter(ExporterOptions options, USkeleton skeleton, UAnimSequence? animSequence = null)
-            : base(animSequence != null ? animSequence : skeleton, options)
+        private AnimExporter(UObject export, ExporterOptions options) : base(export, options)
         {
             AnimSequences = new List<Anim>();
+        }
 
-            var anim = skeleton.ConvertAnims(animSequence);
-            if (anim.Sequences.Count == 0)
-            {
-                // empty CAnimSet
-                return;
-            }
+        private AnimExporter(ExporterOptions options, USkeleton skeleton, UObject export, CAnimSet animSet)
+            : this(export, options)
+        {
+            if (animSet.Sequences.Count == 0) return;
 
             // Determine if CAnimSet will save animations as separate psa files, or all at once
-            var originalAnim = anim.GetPrimaryAnimObject();
-
-            if (originalAnim == anim.OriginalAnim || anim.Sequences.Count == 1)
+            var originalAnim = animSet.GetPrimaryAnimObject();
+            if (originalAnim == animSet.OriginalAnim || animSet.Sequences.Count == 1)
             {
-                // Export all animations in a single file
-                DoExportPsa(anim, 0);
+                DoExportPsa(animSet, 0);
             }
             else
             {
@@ -43,12 +39,12 @@ namespace CUE4Parse_Conversion.Animations
                 // Export animations separately, this will happen only when CAnimSet has
                 // a few sequences (but more than one)
                 var tempAnimSet = new CAnimSet();
-                tempAnimSet.CopyAllButSequences(anim);
+                tempAnimSet.CopyAllButSequences(animSet);
                 // Now we have a copy of AnimSet, let's set up Sequences array to a single
                 // item and export one-by-one
-                for (int animIndex = 0; animIndex < anim.Sequences.Count; animIndex++)
+                for (int animIndex = 0; animIndex < animSet.Sequences.Count; animIndex++)
                 {
-                    var seq = anim.Sequences[animIndex];
+                    var seq = animSet.Sequences[animIndex];
                     tempAnimSet.Sequences.Clear();
                     tempAnimSet.Sequences.Add(seq);
                     // Do the export, pass UAnimSequence as the "main" object, so it will be
@@ -60,7 +56,27 @@ namespace CUE4Parse_Conversion.Animations
             }
         }
 
+        private AnimExporter(ExporterOptions options, USkeleton skeleton, UAnimSequence? animSequence = null)
+            : this(options, skeleton, animSequence != null ? animSequence : skeleton, skeleton.ConvertAnims(animSequence))
+        {
+
+        }
+
+        private AnimExporter(ExporterOptions options, USkeleton skeleton, UAnimMontage? animMontage = null)
+            : this(options, skeleton, animMontage != null ? animMontage : skeleton, skeleton.ConvertAnims(animMontage))
+        {
+
+        }
+
+        private AnimExporter(ExporterOptions options, USkeleton skeleton, UAnimComposite? animComposite = null)
+            : this(options, skeleton, animComposite != null ? animComposite : skeleton, skeleton.ConvertAnims(animComposite))
+        {
+
+        }
+
         public AnimExporter(UAnimSequence animSequence, ExporterOptions options) : this(options, animSequence.Skeleton.Load<USkeleton>()!, animSequence) { }
+        public AnimExporter(UAnimMontage animMontage, ExporterOptions options) : this(options, animMontage.Skeleton.Load<USkeleton>()!, animMontage) { }
+        public AnimExporter(UAnimComposite animComposite, ExporterOptions options) : this(options, animComposite.Skeleton.Load<USkeleton>()!, animComposite) { }
 
         private void DoExportPsa(CAnimSet anim, int seqIdx)
         {
@@ -76,7 +92,7 @@ namespace CUE4Parse_Conversion.Animations
             mainHdr.TypeFlag = Constants.PSA_VERSION;
             Ar.SerializeChunkHeader(mainHdr, "ANIMHEAD");
 
-            int numBones = anim.TrackBoneNames.Length;
+            int numBones = anim.TrackBonesInfo.Length;
             int numAnims = anim.Sequences.Count;
 
             boneHdr.DataCount = numBones;
@@ -84,20 +100,20 @@ namespace CUE4Parse_Conversion.Animations
             Ar.SerializeChunkHeader(boneHdr, "BONENAMES");
             for (i = 0; i < numBones; i++)
             {
-                Trace.Assert(anim.TrackBoneNames[i].Text.Length < 64);
+                Trace.Assert(anim.TrackBonesInfo[i].Name.Text.Length < 64);
                 var bone = new FNamedBoneBinary
                 {
-                    Name = anim.TrackBoneNames[i].Text,
+                    Name = anim.TrackBonesInfo[i].Name.Text,
                     Flags = 0, // reserved
                     NumChildren = 0, // unknown here
-                    ParentIndex = i > 0 ? 0 : -1, // unknown for UAnimSet
+                    ParentIndex = i > 0 ? 0 : -1, // unknown for UAnimSet?? WHAT???
                     BonePos = { Length = 1.0f }
                 };
                 if (i < anim.BonePositions.Length)
                 {
                     // The AnimSet has bone transform information, store it in psa file (UE4+)
-                    bone.BonePos.Position = anim.BonePositions[i].Position;
-                    bone.BonePos.Orientation = anim.BonePositions[i].Orientation;
+                    bone.BonePos.Position = anim.BonePositions[i].Translation;
+                    bone.BonePos.Orientation = anim.BonePositions[i].Rotation;
                 }
                 bone.Serialize(Ar);
             }
@@ -214,11 +230,11 @@ namespace CUE4Parse_Conversion.Animations
             // generate configuration file with extended attributes
 
             // Get statistics of each bone retargeting mode to see if we need a config or not
-            var modeCounts = new int[(int) EBoneRetargetingMode.Count];
-            foreach (var mode in anim.BoneModes)
-            {
-                modeCounts[(int) mode]++;
-            }
+            // var modeCounts = new int[(int) EBoneRetargetingMode.Count];
+            // foreach (var mode in anim.BoneModes)
+            // {
+            //     modeCounts[(int) mode]++;
+            // }
         }
 
         public override bool TryWriteToDir(DirectoryInfo baseDirectory, out string label, out string savedFilePath)

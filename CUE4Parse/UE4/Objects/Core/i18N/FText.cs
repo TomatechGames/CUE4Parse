@@ -132,10 +132,10 @@ namespace CUE4Parse.UE4.Objects.Core.i18N
             };
         }
 
-        public FText(string sourceString) : this("", "", sourceString) { }
+        public FText(string sourceString, string localizedString = "") : this("", "", sourceString, localizedString) { }
 
-        public FText(string @namespace, string key, string sourceString) : this(0, ETextHistoryType.Base,
-            new FTextHistory.Base(@namespace, key, sourceString)) { }
+        public FText(string @namespace, string key, string sourceString, string localizedString = "") : this(0, ETextHistoryType.Base,
+            new FTextHistory.Base(@namespace, key, sourceString, localizedString)) { }
 
         public FText(uint flags, ETextHistoryType historyType, FTextHistory textHistory)
         {
@@ -203,12 +203,12 @@ namespace CUE4Parse.UE4.Objects.Core.i18N
                 LocalizedString = Ar.Owner.Provider?.GetLocalizedString(Namespace, Key, SourceString) ?? string.Empty;
             }
 
-            public Base(string namespacee, string key, string sourceString)
+            public Base(string namespacee, string key, string sourceString, string localizedString = "")
             {
                 Namespace = namespacee;
                 Key = key;
                 SourceString = sourceString;
-                LocalizedString = string.Empty;
+                LocalizedString = string.IsNullOrEmpty(localizedString) ? sourceString : localizedString;
             }
         }
 
@@ -402,7 +402,7 @@ namespace CUE4Parse.UE4.Objects.Core.i18N
             Value = Type switch
             {
                 EFormatArgumentType.Text => new FText(Ar),
-                EFormatArgumentType.Int => Ar.Read<long>(),
+                EFormatArgumentType.Int => Ar.Game == EGame.GAME_HogwartsLegacy ? Ar.Read<int>() : Ar.Read<long>(),
                 EFormatArgumentType.UInt => Ar.Read<ulong>(),
                 EFormatArgumentType.Double => Ar.Read<double>(),
                 EFormatArgumentType.Float => Ar.Read<float>(),
