@@ -17,6 +17,7 @@
 
   <PropertyGroup>
     <VersionPrefix>1.0.9</VersionPrefix>
+    <Version>1.0.9</Version>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -26,7 +27,7 @@
   <ItemGroup>
     <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0023" />
     <PackageReference Include="SharpGLTF.Toolkit" Version="1.0.0-alpha0023" />
-    <PackageReference Include="SkiaSharp" Version="2.88.1" />
+    <PackageReference Include="SkiaSharp" Version="2.88.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,6 +41,8 @@
   <ItemGroup>
     <None Remove="Resources\Detex.dll" />
     <EmbeddedResource Include="Resources\Detex.dll" />
+    <None Remove="Resources\tegra_swizzle_x64.dll" />
+    <EmbeddedResource Include="Resources\tegra_swizzle_x64.dll" />
   </ItemGroup>
 
 </Project>
