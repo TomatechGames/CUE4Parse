@@ -1,4 +1,3 @@
-﻿using System;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Exceptions;
@@ -66,6 +65,8 @@ namespace CUE4Parse.UE4.Objects.UObject
             "UInt16Property" => new FUInt16Property(),
             "UInt32Property" => new FUInt32Property(),
             "UInt64Property" => new FUInt64Property(),
+            // "WeakObjectProperty" => new FWeakObjectProperty(),
+            "OptionalProperty" => new FOptionalProperty(),
             _ => throw new ParserException("Unsupported serialized property type " + fieldTypeName)
         };
 
@@ -79,22 +80,6 @@ namespace CUE4Parse.UE4.Objects.UObject
                 return field;
             }
             return null;
-        }
-    }
-
-    public class FFieldConverter : JsonConverter<FField>
-    {
-        public override void WriteJson(JsonWriter writer, FField value, JsonSerializer serializer)
-        {
-            writer.WriteStartObject();
-            value.WriteJson(writer, serializer);
-            writer.WriteEndObject();
-        }
-
-        public override FField ReadJson(JsonReader reader, Type objectType, FField existingValue, bool hasExistingValue,
-            JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
         }
     }
 }

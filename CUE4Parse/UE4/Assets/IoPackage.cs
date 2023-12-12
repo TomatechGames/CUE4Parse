@@ -110,7 +110,13 @@ namespace CUE4Parse.UE4.Assets
                 BulkDataMap = Array.Empty<FBulkDataMapEntry>();
                 if (uassetAr.Ver >= EUnrealEngineObjectUE5Version.DATA_RESOURCES)
                 {
-                    var bulkDataMapSize = uassetAr.Read<ulong>();
+                    if (uassetAr.Game >= EGame.GAME_UE5_4)
+                    {
+                        var pad = uassetAr.Read<ulong>(); // pad
+                        _ = uassetAr.ReadArray<byte>((int) pad);
+                    }
+
+                    var bulkDataMapSize = uassetAr.Read<long>();
                     BulkDataMap = uassetAr.ReadArray<FBulkDataMapEntry>((int) (bulkDataMapSize / FBulkDataMapEntry.Size));
                 }
 
@@ -131,7 +137,7 @@ namespace CUE4Parse.UE4.Assets
                 uassetAr.Position = summary.ExportBundleEntriesOffset;
                 exportBundleEntries = uassetAr.ReadArray<FExportBundleEntry>(Summary.ExportCount * 2);
 
-                if (uassetAr.Game < EGame.GAME_UE5_2)
+                if (uassetAr.Game < EGame.GAME_UE5_3)
                 {
                     // Export bundle headers
                     uassetAr.Position = summary.GraphDataOffset;
@@ -236,9 +242,9 @@ namespace CUE4Parse.UE4.Assets
 
             if (exportBundleHeaders != null) // 4.26 - 5.2
             {
+                var currentExportDataOffset = allExportDataOffset;
                 foreach (var exportBundle in exportBundleHeaders)
                 {
-                    var currentExportDataOffset = allExportDataOffset;
                     for (var i = 0u; i < exportBundle.EntryCount; i++)
                     {
                         currentExportDataOffset += ProcessEntry(exportBundleEntries[exportBundle.FirstEntryIndex + i], currentExportDataOffset, false);

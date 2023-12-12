@@ -96,7 +96,7 @@ namespace CUE4Parse_Conversion.Animations
                 TrackTime = sequence.NumFrames,
                 AnimRate = sequence.FramesPerSecond,
                 StartBone = 0, // reserved
-                FirstRawFrame = sequence.NumFrames, // useless, but used in UnrealEd when importing
+                FirstRawFrame = 0, // useless, but used in UnrealEd when importing
                 NumRawFrames = sequence.NumFrames
             };
             animInfo.Serialize(Ar);
@@ -160,7 +160,10 @@ namespace CUE4Parse_Conversion.Animations
             }
 
             // psa file is done
-            AnimSequences.Add(new Anim($"{PackagePath}_SEQ{seqIdx}.psa", Ar.GetBuffer()));
+            AnimSequences.Add(seqIdx > 0
+                ? new Anim($"{PackagePath}_SEQ{seqIdx}.psa", Ar.GetBuffer())
+                : new Anim($"{PackagePath}.psa", Ar.GetBuffer()));
+
             Ar.Dispose();
         }
 

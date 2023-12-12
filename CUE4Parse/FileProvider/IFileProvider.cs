@@ -70,7 +70,7 @@ namespace CUE4Parse.FileProvider
         /// This is fetched from the prefix before "Game/".
         /// If there was no file with "Game/" the root folder name is returned
         /// </summary>
-        public string GameName { get; }
+        public string InternalGameName { get; }
 
         /// <summary>
         /// Searches for a game file from this provider.
@@ -151,6 +151,7 @@ namespace CUE4Parse.FileProvider
         /// <param name="path">The file path</param>
         /// <returns>The reader if it could be created; null otherwise</returns>
         public Task<FArchive?> TryCreateReaderAsync(string path);
+
         /// <summary>
         /// Loads and parses a Package at the passed path.
         /// Can throw various exceptions
@@ -219,6 +220,7 @@ namespace CUE4Parse.FileProvider
         /// <param name="file">The package file</param>
         /// <returns>The parsed package content if it could be parsed; default otherwise</returns>
         public Task<IPackage?> TryLoadPackageAsync(GameFile file);
+
         /// <summary>
         /// Loads all parts of the Package at the passed path.
         /// Can throw various exceptions
@@ -324,12 +326,17 @@ namespace CUE4Parse.FileProvider
         /// <param name="objectPath">The object path</param>
         /// <returns>The loaded object if loaded successfully and of correct type; null otherwise</returns>
         public Task<T?> TryLoadObjectAsync<T>(string? objectPath) where T : UObject;
-
         /// <summary>
         /// Loads all objects from the Package at the passed path
         /// </summary>
         /// <param name="packagePath">The package path</param>
         /// <returns>All objects of the package</returns>
         public IEnumerable<UObject> LoadAllObjects(string? packagePath);
+        /// <summary>
+        /// Asynchronusly loads all objects from the Package at the passed path
+        /// </summary>
+        /// <param name="packagePath">The package path</param>
+        /// <returns>All objects of the package</returns>
+        public Task<IEnumerable<UObject>> LoadAllObjectsAsync(string? packagePath);
     }
 }

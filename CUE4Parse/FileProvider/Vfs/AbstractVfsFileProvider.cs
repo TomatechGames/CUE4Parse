@@ -12,6 +12,7 @@ using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.UE4.IO;
 using CUE4Parse.UE4.IO.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
+using CUE4Parse.UE4.Pak;
 using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.UE4.VirtualFileCache;
@@ -45,31 +46,58 @@ namespace CUE4Parse.FileProvider.Vfs
 
         protected AbstractVfsFileProvider(bool isCaseInsensitive = false, VersionContainer? versions = null) : base(isCaseInsensitive, versions)
         {
-            _files = new FileProviderDictionary(IsCaseInsensitive);
+            _files = new FileProviderDictionary(isCaseInsensitive);
         }
 
-        public IEnumerable<IAesVfsReader> UnloadedVfsByGuid(FGuid guid) => _unloadedVfs.Keys.Where(it => it.EncryptionKeyGuid == guid);
+        public abstract void Initialize();
 
-        public void UnloadAllVfs()
+        public void RegisterVfs(string file) => RegisterVfs(new FileInfo(file));
+        public void RegisterVfs(FileInfo file) => RegisterVfs(file.FullName, new Stream[] { file.OpenRead() });
+        public void RegisterVfs(string file, Stream[] stream, Func<string, FArchive>? openContainerStreamFunc = null)
+            => RegisterVfs(new FStreamArchive(file, stream[0], Versions), stream.Length > 1 ? stream[1] : null, openContainerStreamFunc);
+        public void RegisterVfs(FArchive archive, Stream? stream, Func<string, FArchive>? openContainerStreamFunc = null)
         {
-            _files.Clear();
-            foreach (var reader in _mountedVfs.Keys)
+            try
             {
-                _keys.TryRemove(reader.EncryptionKeyGuid, out _);
-                _requiredKeys[reader.EncryptionKeyGuid] = null;
-                _mountedVfs.TryRemove(reader, out _);
-                _unloadedVfs[reader] = null;
+                AbstractAesVfsReader reader;
+                switch (archive.Name.SubstringAfterLast('.').ToUpper())
+                {
+                    case "PAK":
+                        reader = new PakFileReader(archive);
+                        break;
+                    case "UTOC":
+                        openContainerStreamFunc ??= it => new FStreamArchive(it, stream!, Versions);
+                        reader = new IoStoreReader(archive, openContainerStreamFunc);
+                        break;
+                    default:
+                        return;
+                }
+                PostLoadReader(reader);
+            }
+            catch (Exception e)
+            {
+                Log.Warning(e.ToString());
             }
         }
-        public void UnloadNonStreamedVfs()
+        public async Task RegisterVfs(IoChunkToc chunkToc, IoStoreOnDemandOptions options)
         {
-            var onDemandFiles = new Dictionary<string, GameFile>();
-            foreach (var (path, vfs) in _files)
-                if (vfs is StreamedGameFile)
-                    onDemandFiles[path] = vfs;
+            var downloader = new IoStoreOnDemandDownloader(options);
+            foreach (var container in chunkToc.Containers)
+            {
+                PostLoadReader(new IoStoreOnDemandReader(
+                    new FStreamArchive($"{container.ContainerName}.utoc", await downloader.Download($"{container.UTocHash.ToString().ToLower()}.utoc"), Versions),
+                    container.Entries, downloader));
+            }
+        }
 
-            UnloadAllVfs();
-            _files.AddFiles(onDemandFiles);
+        private void PostLoadReader(AbstractAesVfsReader reader)
+        {
+            if (reader.IsEncrypted && !_requiredKeys.ContainsKey(reader.EncryptionKeyGuid))
+                _requiredKeys[reader.EncryptionKeyGuid] = null;
+
+            _unloadedVfs[reader] = null;
+            reader.IsConcurrent = true;
+            reader.CustomEncryption = CustomEncryption;
         }
 
         public int Mount() => MountAsync().Result;
@@ -79,11 +107,7 @@ namespace CUE4Parse.FileProvider.Vfs
             var tasks = new LinkedList<Task>();
             foreach (var reader in _unloadedVfs.Keys)
             {
-                if (GlobalData == null && reader is IoStoreReader ioReader &&
-                    (reader.Name.Equals("global.utoc", StringComparison.OrdinalIgnoreCase) || reader.Name.Equals("global_console_win.utoc", StringComparison.OrdinalIgnoreCase)))
-                {
-                    GlobalData = new IoGlobalData(ioReader);
-                }
+                VerifyGlobalData(reader);
 
                 if (reader.IsEncrypted && CustomEncryption == null || !reader.HasDirectoryIndex)
                     continue;
@@ -118,29 +142,20 @@ namespace CUE4Parse.FileProvider.Vfs
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int SubmitKey(FGuid guid, FAesKey key) => SubmitKeys(new Dictionary<FGuid, FAesKey> {{ guid, key }});
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int SubmitKeys(IEnumerable<KeyValuePair<FGuid, FAesKey>> keys) => SubmitKeysAsync(keys).Result;
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public async Task<int> SubmitKeyAsync(FGuid guid, FAesKey key) =>
-            await SubmitKeysAsync(new Dictionary<FGuid, FAesKey> {{ guid, key }}).ConfigureAwait(false);
-
+        public async Task<int> SubmitKeyAsync(FGuid guid, FAesKey key)
+            => await SubmitKeysAsync(new Dictionary<FGuid, FAesKey> {{ guid, key }}).ConfigureAwait(false);
         public async Task<int> SubmitKeysAsync(IEnumerable<KeyValuePair<FGuid, FAesKey>> keys)
         {
             var countNewMounts = 0;
             var tasks = new LinkedList<Task<IAesVfsReader?>>();
-            foreach (var it in keys)
+            foreach (var (guid, key) in keys)
             {
-                var guid = it.Key;
-                var key = it.Value;
-                foreach (var reader in UnloadedVfsByGuid(guid))
+                foreach (var reader in _unloadedVfs.Keys.Where(it => it.EncryptionKeyGuid == guid))
                 {
-                    if (GlobalData == null && reader is IoStoreReader ioReader &&
-                        (reader.Name.Equals("global.utoc", StringComparison.OrdinalIgnoreCase) || reader.Name.Equals("global_console_win.utoc", StringComparison.OrdinalIgnoreCase)))
-                    {
-                        GlobalData = new IoGlobalData(ioReader);
-                    }
+                    VerifyGlobalData(reader);
 
                     if (!reader.HasDirectoryIndex)
                         continue;
@@ -180,9 +195,18 @@ namespace CUE4Parse.FileProvider.Vfs
             return countNewMounts;
         }
 
+        private void VerifyGlobalData(IAesVfsReader reader)
+        {
+            if (GlobalData != null || reader is not IoStoreReader ioStoreReader) return;
+            if (ioStoreReader.Name.Equals("global.utoc", StringComparison.OrdinalIgnoreCase) || ioStoreReader.Name.Equals("global_console_win.utoc", StringComparison.OrdinalIgnoreCase))
+            {
+                GlobalData = new IoGlobalData(ioStoreReader);
+            }
+        }
+
         public int LoadVirtualCache()
         {
-            var persistentDownloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), GameName, "Saved/PersistentDownloadDir");
+            var persistentDownloadDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), InternalGameName, "Saved/PersistentDownloadDir");
             if (!Directory.Exists(persistentDownloadDir)) return 0;
 
             var vfcMetadata = Path.Combine(persistentDownloadDir, "VFC", "vfc.meta");
@@ -210,6 +234,28 @@ namespace CUE4Parse.FileProvider.Vfs
 
             _files.AddFiles(onDemandFiles);
             return onDemandFiles.Count;
+        }
+
+        public void UnloadAllVfs()
+        {
+            _files.Clear();
+            foreach (var reader in _mountedVfs.Keys)
+            {
+                _keys.TryRemove(reader.EncryptionKeyGuid, out _);
+                _requiredKeys[reader.EncryptionKeyGuid] = null;
+                _mountedVfs.TryRemove(reader, out _);
+                _unloadedVfs[reader] = null;
+            }
+        }
+        public void UnloadNonStreamedVfs()
+        {
+            var onDemandFiles = new Dictionary<string, GameFile>();
+            foreach (var (path, vfs) in _files)
+                if (vfs is StreamedGameFile)
+                    onDemandFiles[path] = vfs;
+
+            UnloadAllVfs();
+            _files.AddFiles(onDemandFiles);
         }
 
         public void Dispose()

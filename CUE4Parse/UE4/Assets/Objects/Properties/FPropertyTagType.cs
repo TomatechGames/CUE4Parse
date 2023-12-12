@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -11,7 +11,7 @@ using CUE4Parse.Utils;
 using Newtonsoft.Json;
 using Serilog;
 
-namespace CUE4Parse.UE4.Assets.Objects
+namespace CUE4Parse.UE4.Assets.Objects.Properties
 {
     public enum ReadType : byte
     {
@@ -23,7 +23,7 @@ namespace CUE4Parse.UE4.Assets.Objects
 
     public abstract class FPropertyTagType<T> : FPropertyTagType
     {
-        public T Value { get; protected set; }
+        public T? Value { get; protected set; }
 
         public override object? GenericValue => Value;
 
@@ -134,6 +134,7 @@ namespace CUE4Parse.UE4.Assets.Objects
                 "UInt32Property" => new UInt32Property(Ar, type),
                 "UInt64Property" => new UInt64Property(Ar, type),
                 "WeakObjectProperty" => new WeakObjectProperty(Ar, type),
+                "OptionalProperty" => new OptionalProperty(Ar, tagData, type),
                 _ => null
             };
 #if DEBUG
@@ -143,20 +144,6 @@ namespace CUE4Parse.UE4.Assets.Objects
             }
 #endif
             return tagType;
-        }
-    }
-
-    public class FPropertyTagTypeConverter : JsonConverter<FPropertyTagType>
-    {
-        public override void WriteJson(JsonWriter writer, FPropertyTagType value, JsonSerializer serializer)
-        {
-            serializer.Serialize(writer, value);
-        }
-
-        public override FPropertyTagType ReadJson(JsonReader reader, Type objectType, FPropertyTagType existingValue, bool hasExistingValue,
-            JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
         }
     }
 }
