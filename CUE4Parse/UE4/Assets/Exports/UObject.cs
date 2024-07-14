@@ -321,6 +321,22 @@ namespace CUE4Parse.UE4.Assets.Exports
             }
         }
 
+        public T GetOrDefaultFromDataList<T>(string name, T defaultValue = default, StringComparison comparisonType = StringComparison.Ordinal)
+        {
+            if (!TryGetValue(out FInstancedStruct[] dataList, "DataList"))
+            {
+                return defaultValue;
+            }
+            foreach (var item in dataList)
+            {
+                if (item.NonConstStruct?.Properties.Exists(p => p.Name.Text == name) == true)
+                {
+                    return PropertyUtil.GetOrDefault(item.NonConstStruct, name, defaultValue, comparisonType);
+                }
+            }
+            return defaultValue;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T GetOrDefault<T>(string name, T defaultValue = default, StringComparison comparisonType = StringComparison.Ordinal) =>
             PropertyUtil.GetOrDefault(this, name, defaultValue, comparisonType);
