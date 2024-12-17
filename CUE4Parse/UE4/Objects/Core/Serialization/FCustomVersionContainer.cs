@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -15,12 +14,12 @@ public class FCustomVersionContainer
 
     public FCustomVersionContainer()
     {
-        Versions = Array.Empty<FCustomVersion>();
+        Versions = [];
     }
 
     public FCustomVersionContainer(IEnumerable<FCustomVersion>? versions)
     {
-        Versions = (versions ?? Array.Empty<FCustomVersion>()) .ToArray();
+        Versions = (versions ?? []).ToArray();
     }
 
     public FCustomVersionContainer(FArchive Ar, ECustomVersionSerializationFormat format = ECustomVersionSerializationFormat.Latest) : this()
@@ -71,5 +70,22 @@ public class FCustomVersionContainer
         }
 
         return -1;
+    }
+
+    public static ECustomVersionSerializationFormat DetermineSerializationFormat(int legacyVersion)
+    {
+        if (legacyVersion == -2)
+        {
+            return ECustomVersionSerializationFormat.Enums;
+        }
+        if (legacyVersion < -2 && legacyVersion >= -5)
+        {
+            return ECustomVersionSerializationFormat.Guids;
+        }
+        if (legacyVersion < -5)
+        {
+            return ECustomVersionSerializationFormat.Optimized;
+        }
+        return ECustomVersionSerializationFormat.Unknown;
     }
 }

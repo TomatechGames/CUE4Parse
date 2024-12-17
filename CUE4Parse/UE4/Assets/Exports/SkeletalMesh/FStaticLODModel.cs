@@ -22,7 +22,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
     [JsonConverter(typeof(FStaticLODModelConverter))]
     public class FStaticLODModel
     {
-        public FSkelMeshSection[] Sections;
+        public FSkelMeshSection[] Sections = [];
         public FMultisizeIndexContainer? Indices;
         public short[] ActiveBoneIndices;
         public FSkelMeshChunk[] Chunks;
@@ -39,6 +39,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
         public FSkeletalMeshVertexColorBuffer ColorVertexBuffer;
         public FMultisizeIndexContainer AdjacencyIndexBuffer;
         public FSkeletalMeshVertexClothBuffer ClothVertexBuffer;
+        public FSkeletalMeshHalfEdgeBuffer HalfEdgeBuffer;
         public bool SkipLod => Indices == null || Indices.Indices16.Length < 1 && Indices.Indices32.Length < 1;
 
         public FStaticLODModel()
@@ -75,7 +76,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
             }
 
             Size = Ar.Read<int>();
-            if (!stripDataFlags.IsDataStrippedForServer())
+            if (!stripDataFlags.IsAudioVisualDataStripped())
                 NumVertices = Ar.Read<int>();
 
             RequiredBones = Ar.ReadArray<short>();
@@ -88,7 +89,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 MaxImportVertex = Ar.Read<int>();
             }
 
-            if (!stripDataFlags.IsDataStrippedForServer())
+            if (!stripDataFlags.IsAudioVisualDataStripped())
             {
                 NumTexCoords = Ar.Read<int>();
                 if (skelMeshVer < FSkeletalMeshCustomVersion.Type.SplitModelAndRenderData)
@@ -213,7 +214,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
             var bInlined = Ar.ReadBoolean();
 
             RequiredBones = Ar.ReadArray<short>();
-            if (!stripDataFlags.IsDataStrippedForServer() && !bIsLODCookedOut)
+            if (!stripDataFlags.IsAudioVisualDataStripped() && !bIsLODCookedOut)
             {
                 Sections = new FSkelMeshSection[Ar.Read<int>()];
                 for (var i = 0; i < Sections.Length; i++)
@@ -224,14 +225,17 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
 
                 ActiveBoneIndices = Ar.ReadArray<short>();
 
-                if (Ar.Game == EGame.GAME_KenaBridgeofSpirits)
+                if (Ar.Game is EGame.GAME_KenaBridgeofSpirits)
                     Ar.ReadArray<byte>(); // EAssetType_array1
+                if (Ar.Game is EGame.GAME_FragPunk)
+                    Ar.Read<int>();
 
                 Ar.Position += 4; //var buffersSize = Ar.Read<uint>();
 
                 if (bInlined)
                 {
                     SerializeStreamedData(Ar, bHasVertexColors);
+
                     if (Ar.Game == EGame.GAME_RogueCompany)
                     {
                         Ar.Position += 12; // 1 (Long) + 2^16 (Int)
@@ -239,6 +243,18 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                         var elementCount = Ar.Read<int>();
                         if (elementSize > 0 && elementCount > 0)
                             Ar.SkipBulkArrayData();
+                    }
+
+                    if (Ar.Game == EGame.GAME_MortalKombat1 && Ar.ReadBoolean())
+                    {
+                        Ar.SkipBulkArrayData();
+                        Ar.SkipBulkArrayData();
+                        Ar.SkipBulkArrayData();
+                        Ar.SkipBulkArrayData();
+                        Ar.SkipBulkArrayData();
+                        Ar.SkipBulkArrayData();
+                        Ar.SkipBulkArrayData();
+                        Ar.Position += 8;
                     }
                 }
                 else
@@ -296,7 +312,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
             ActiveBoneIndices = Ar.ReadArray<short>();
             RequiredBones = Ar.ReadArray<short>();
 
-            if (!stripDataFlags.IsDataStrippedForServer() && !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_MinLodData))
+            if (!stripDataFlags.IsAudioVisualDataStripped() && !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_MinLodData))
             {
                 var positionVertexBuffer = new FPositionVertexBuffer(Ar);
                 var staticMeshVertexBuffer = new FStaticMeshVertexBuffer(Ar);
@@ -367,6 +383,11 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
             if (HasClothData())
                 ClothVertexBuffer = new FSkeletalMeshVertexClothBuffer(Ar);
 
+            if (Ar.Game == EGame.GAME_Spectre)
+            {
+                _ = new FMultisizeIndexContainer(Ar);
+            }
+            
             var skinWeightProfilesData = new FSkinWeightProfilesData(Ar);
 
             if (Ar.Versions["SkeletalMesh.HasRayTracingData"])
@@ -390,6 +411,16 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 for (int i = 0; i < count; i++)
                 {
                     VertexAttributeBuffers[Ar.ReadFName()] = new FSkeletalMeshAttributeVertexBuffer(Ar);
+                }
+            }
+
+            if (FFortniteMainBranchObjectVersion.Get(Ar) >= FFortniteMainBranchObjectVersion.Type.SkeletalHalfEdgeData)
+            {
+                const byte MeshDeformerStripFlag = 1;
+                var meshDeformerStripFlags = Ar.Read<FStripDataFlags>();
+                if (!meshDeformerStripFlags.IsClassDataStripped(MeshDeformerStripFlag))
+                {
+                    HalfEdgeBuffer = new FSkeletalMeshHalfEdgeBuffer(Ar);
                 }
             }
 

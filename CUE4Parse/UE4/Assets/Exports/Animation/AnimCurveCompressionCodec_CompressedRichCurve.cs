@@ -173,6 +173,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
                     RCCF_Linear => RCIM_Linear,
                     RCCF_Cubic => RCIM_Cubic,
                     RCCF_Constant => RCIM_Constant,
+                    RCCF_Empty => RCIM_None,
                     _ => throw new ArgumentException("Can't convert interpMode " + interpMode + " to ERichCurveInterpMode")
                 };
                 key.TangentMode = RCTM_Auto; // How to convert? interpMode == RCCF_Weighted && keyDataAdapter.GetKeyTangentWeightMode(keyIndex) != RCTWM_WeightedNone ? RCTM_User : RCTM_Auto;
@@ -210,7 +211,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
                     var rawCurve = ConverterMap[(int) curve.CompressionFormat][(int) curve.KeyTimeCompressionFormat](curve.PreInfinityExtrap, curve.PostInfinityExtrap, curve.NumKeys, compressedKeys);
                     floatCurves[curveIndex] = new FFloatCurve
                     {
-                        Name = curveName,
+                        CurveName = curveName.DisplayName,
                         FloatCurve = rawCurve,
                         CurveTypeFlags = 4
                     };

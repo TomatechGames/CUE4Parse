@@ -2,11 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Utils;
 using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.UE4.Readers;
+
 using Serilog;
 
 namespace CUE4Parse.UE4.Assets.Readers
@@ -36,12 +40,24 @@ namespace CUE4Parse.UE4.Assets.Readers
             var nameIndex = Read<int>();
             var extraIndex = Read<int>();
 #if !NO_FNAME_VALIDATION
-            if (nameIndex < 0 || nameIndex >= Owner.NameMap.Length)
+            if (nameIndex < 0 || nameIndex >= Owner!.NameMap.Length)
             {
-                throw new ParserException(this, $"FName could not be read, requested index {nameIndex}, name map size {Owner.NameMap.Length}");
+                throw new ParserException(this, $"FName could not be read, requested index {nameIndex}, name map size {Owner!.NameMap.Length}");
             }
 #endif
             return new FName(Owner.NameMap[nameIndex], nameIndex, extraIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TestReadFName()
+        {
+            if (HasUnversionedProperties) return false;
+            var savedPos = Position;
+            if (Position + 2 * sizeof(int) >= Length) return false;
+            var nameIndex = Read<int>();
+            var index = Read<int>();
+            Position = savedPos;
+            return nameIndex >= 0 && nameIndex < Owner!.NameMap.Length && index >= 0 && index < 256;
         }
 
         // TODO not really optimal, there should be TryReadObject functions etc
@@ -62,7 +78,7 @@ namespace CUE4Parse.UE4.Assets.Readers
                     return null;
                 }
 
-                if (Owner.Provider == null)
+                if (Owner?.Provider == null)
                 {
                     Log.Warning("Can't load object {Resolved} without a file provider", resolved.Name);
                     return null;
@@ -129,6 +145,13 @@ namespace CUE4Parse.UE4.Assets.Readers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int Read(byte[] buffer, int offset, int count)
             => _baseArchive.Read(buffer, offset, count);
+
+        public override int ReadAt(long position, byte[] buffer, int offset, int count)
+            => _baseArchive.ReadAt(position, buffer, offset, count);
+        public override Task<int> ReadAtAsync(long position, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+            => _baseArchive.ReadAtAsync(position, buffer, offset, count, cancellationToken);
+        public override ValueTask<int> ReadAtAsync(long position, Memory<byte> memory, CancellationToken cancellationToken = default)
+            => _baseArchive.ReadAtAsync(position, memory, cancellationToken);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override long Seek(long offset, SeekOrigin origin)

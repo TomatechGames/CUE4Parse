@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Exceptions;
@@ -344,7 +344,9 @@ namespace CUE4Parse.UE4.Objects.Core.i18N
         {
             public readonly FName TableId;
             public readonly string Key;
-            public override string Text { get; }
+            public readonly string SourceString;
+            public readonly string LocalizedString;
+            public override string Text => LocalizedString;
 
             public StringTableEntry(FAssetArchive Ar)
             {
@@ -352,9 +354,10 @@ namespace CUE4Parse.UE4.Objects.Core.i18N
                 Key = Ar.ReadFString();
 
                 if (Ar.Owner.Provider!.TryLoadObject(TableId.Text, out UStringTable table) &&
-                    table.StringTable.KeysToMetaData.TryGetValue(Key, out var t))
+                    table.StringTable.KeysToEntries.TryGetValue(Key, out var t))
                 {
-                    Text = t;
+                    SourceString = t;
+                    LocalizedString = Ar.Owner.Provider!.GetLocalizedString(table.StringTable.TableNamespace, Key, t);
                 }
             }
         }
@@ -382,13 +385,13 @@ namespace CUE4Parse.UE4.Objects.Core.i18N
         public EFormatArgumentType Type;
         public object Value;
 
-        public FFormatArgumentValue(FAssetArchive Ar)
+        public FFormatArgumentValue(FAssetArchive Ar, bool isArgumentData = false)
         {
             Type = Ar.Read<EFormatArgumentType>();
             Value = Type switch
             {
                 EFormatArgumentType.Text => new FText(Ar),
-                EFormatArgumentType.Int => Ar.Game == EGame.GAME_HogwartsLegacy ? Ar.Read<int>() : Ar.Read<long>(),
+                EFormatArgumentType.Int => isArgumentData && FUE5ReleaseStreamObjectVersion.Get(Ar) < FUE5ReleaseStreamObjectVersion.Type.TextFormatArgumentData64bitSupport ? Ar.Read<int>() : Ar.Read<long>(),
                 EFormatArgumentType.UInt => Ar.Read<ulong>(),
                 EFormatArgumentType.Double => Ar.Read<double>(),
                 EFormatArgumentType.Float => Ar.Read<float>(),
@@ -405,7 +408,7 @@ namespace CUE4Parse.UE4.Objects.Core.i18N
         public FFormatArgumentData(FAssetArchive Ar)
         {
             ArgumentName = Ar.ReadFString();
-            ArgumentValue = new FFormatArgumentValue(Ar);
+            ArgumentValue = new FFormatArgumentValue(Ar, true);
         }
     }
 

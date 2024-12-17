@@ -37,7 +37,7 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
             CDSF_StripIndexBuffers = 128 | 64 | 32
         }
 
-        public FStaticMeshLODResources(FAssetArchive Ar)
+        public FStaticMeshLODResources(FArchive Ar)
         {
             var stripDataFlags = Ar.Read<FStripDataFlags>();
 
@@ -48,7 +48,7 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
 
             if (!Ar.Versions["StaticMesh.UseNewCookedFormat"])
             {
-                if (!stripDataFlags.IsDataStrippedForServer() && !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_MinLodData))
+                if (!stripDataFlags.IsAudioVisualDataStripped() && !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_MinLodData))
                 {
                     SerializeBuffersLegacy(Ar, stripDataFlags);
                 }
@@ -61,8 +61,11 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
                 bIsLODCookedOut = Ar.ReadBoolean();
             var bInlined = Ar.ReadBoolean() || Ar.Game == EGame.GAME_RogueCompany;
 
-            if (!stripDataFlags.IsDataStrippedForServer() && !bIsLODCookedOut)
+            if (!stripDataFlags.IsAudioVisualDataStripped() && !bIsLODCookedOut)
             {
+                if (Ar.Game >= EGame.GAME_UE5_5)
+                    _ = Ar.ReadBoolean(); // bHasRayTracingGeometry
+
                 if (bInlined)
                 {
                     SerializeBuffers(Ar);
@@ -76,9 +79,9 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
                             break;
                     }
                 }
-                else
+                else if (Ar is FAssetArchive assetArchive)
                 {
-                    var bulkData = new FByteBulkData(Ar);
+                    var bulkData = new FByteBulkData(assetArchive);
                     if (bulkData.Header.ElementCount > 0 && bulkData.Data != null)
                     {
                         var tempAr = new FByteArchive("StaticMeshBufferReader", bulkData.Data, Ar.Versions);
@@ -97,10 +100,15 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
                                 // DepthOnlyIndexBuffer
                                 // ReversedDepthOnlyIndexBuffer
                                 // WireframeIndexBuffer
+
                     if (FUE5ReleaseStreamObjectVersion.Get(Ar) < FUE5ReleaseStreamObjectVersion.Type.RemovingTessellation)
                     {
                         Ar.Position += 2 * 4; // AdjacencyIndexBuffer
                     }
+
+                    if (Ar.Game >= EGame.GAME_UE5_6)
+                        Ar.Position += 6 * 4; // RawDataHeader = 6x uint32
+
                     if (Ar.Game == EGame.GAME_StarWarsJediSurvivor) Ar.Position += 4; // bDropNormals
                 }
 
@@ -115,7 +123,7 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
         }
 
         // Pre-UE4.23 code
-        public void SerializeBuffersLegacy(FAssetArchive Ar, FStripDataFlags stripDataFlags)
+        public void SerializeBuffersLegacy(FArchive Ar, FStripDataFlags stripDataFlags)
         {
             PositionVertexBuffer = new FPositionVertexBuffer(Ar);
             VertexBuffer = new FStaticMeshVertexBuffer(Ar);
@@ -130,6 +138,10 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
                     {
                         _ = new FColorVertexBuffer(Ar);
                     }
+                }
+                else
+                {
+                    ColorVertexBuffer = new FColorVertexBuffer();
                 }
             }
             else
@@ -211,6 +223,9 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
 
             if (Ar.Versions["StaticMesh.HasRayTracingGeometry"] && !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_RayTracingResources))
             {
+                if (Ar.Game >= EGame.GAME_UE5_6)
+                    Ar.Position += 6 * sizeof(uint); // RawDataHeader = 6x uint32
+
                 _ = Ar.ReadBulkArray<byte>(); // rayTracingGeometry
             }
 

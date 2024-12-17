@@ -276,6 +276,28 @@ public class EX_ClassContext : EX_Context
     public EX_ClassContext(FKismetArchive Ar) : base(Ar) { }
 }
 
+public class EX_BitFieldConst : KismetExpression
+{
+    public override EExprToken Token => EExprToken.EX_BitFieldConst;
+    public FKismetPropertyPointer InnerProperty;
+    public byte ConstValue;
+
+    public EX_BitFieldConst(FKismetArchive Ar)
+    {
+        InnerProperty = new FKismetPropertyPointer(Ar);
+        ConstValue = Ar.Read<byte>();
+    }
+
+    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer, bool bAddIndex = false)
+    {
+        base.WriteJson(writer, serializer, bAddIndex);
+        writer.WritePropertyName("InnerProperty");
+        serializer.Serialize(writer, InnerProperty);
+        writer.WritePropertyName("ConstValue");
+        serializer.Serialize(writer, ConstValue);
+    }
+}
+
 public class EX_ClassSparseDataVariable : EX_VariableBase
 {
     public override EExprToken Token => EExprToken.EX_ClassSparseDataVariable;
@@ -864,6 +886,16 @@ public class EX_Nothing : KismetExpression
     public override EExprToken Token => EExprToken.EX_Nothing;
 }
 
+public class EX_NothingInt32 : KismetExpression<int>
+{
+    public override EExprToken Token => EExprToken.EX_NothingInt32;
+
+    public EX_NothingInt32(FKismetArchive Ar)
+    {
+        Value = Ar.Read<int>();
+    }
+}
+
 public class EX_ObjToInterfaceCast : EX_CastBase
 {
     public override EExprToken Token => EExprToken.EX_ObjToInterfaceCast;
@@ -1376,6 +1408,59 @@ public class EX_VirtualFunction : KismetExpression
 public class EX_WireTracepoint : KismetExpression
 {
     public override EExprToken Token => EExprToken.EX_WireTracepoint;
+}
+
+public class EX_AutoRtfmStopTransact : KismetExpression
+{
+    public override EExprToken Token => EExprToken.EX_AutoRtfmStopTransact;
+    public int Id;
+    public EAutoRtfmStopTransactMode Mode;
+
+    public EX_AutoRtfmStopTransact(FKismetArchive Ar)
+    {
+        Id = Ar.Read<int>();
+        Mode = Ar.Read<EAutoRtfmStopTransactMode>();
+    }
+
+    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer, bool bAddIndex = false)
+    {
+        base.WriteJson(writer, serializer, bAddIndex);
+        writer.WritePropertyName("Id");
+        writer.WriteValue(Id);
+        writer.WritePropertyName("Mode");
+        writer.WriteValue(Mode);
+    }
+}
+
+public class EX_AutoRtfmTransact : KismetExpression
+{
+    public override EExprToken Token => EExprToken.EX_AutoRtfmTransact;
+    public int Id;
+    public uint CodeOffset;
+    public KismetExpression[] Parameters;
+
+    public EX_AutoRtfmTransact(FKismetArchive Ar)
+    {
+        Id =  Ar.Read<int>();
+        CodeOffset =  Ar.Read<uint>();
+        Parameters = Ar.ReadExpressionArray(EExprToken.EX_AutoRtfmStopTransact);
+    }
+
+    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer, bool bAddIndex = false)
+    {
+        base.WriteJson(writer, serializer, bAddIndex);
+        writer.WritePropertyName("Id");
+        writer.WriteValue(Id);
+        writer.WritePropertyName("CodeOffset");
+        writer.WriteValue(CodeOffset);
+        writer.WritePropertyName("Parameters");
+        serializer.Serialize(writer, Parameters);
+    }
+}
+
+public class EX_AutoRtfmAbortIfNot : KismetExpression
+{
+    public override EExprToken Token => EExprToken.EX_AutoRtfmAbortIfNot;
 }
 
 [JsonConverter(typeof(FScriptTextConverter))]
