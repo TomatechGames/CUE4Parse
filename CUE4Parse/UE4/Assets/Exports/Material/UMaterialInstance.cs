@@ -9,6 +9,8 @@ using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.Material;
 
+public class UMaterialInstanceDynamic: UMaterialInstance;
+
 public class UMaterialInstance : UMaterialInterface
 {
     private ResolvedObject? _parent;
@@ -39,7 +41,7 @@ public class UMaterialInstance : UMaterialInterface
                 StaticParameters = new FStaticParameterSet(Ar);
             }
 
-            if (Ar.Game >= EGame.GAME_UE4_25 && Ar.Owner?.Provider?.ReadShaderMaps == true)
+            if (Ar is { Game: >= EGame.GAME_UE4_25, Owner.Provider.ReadShaderMaps: true })
             {
                 try
                 {

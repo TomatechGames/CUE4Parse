@@ -1,3 +1,4 @@
+using System;
 using CUE4Parse.UE4.Assets.Exports.Nanite;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Readers;
@@ -27,6 +28,7 @@ public class FStaticMeshRenderData
             _ = Ar.Read<int>(); // minMobileLODIdx
 
         if (Ar.Game == EGame.GAME_HYENAS) Ar.Position += 1;
+        if (Ar.Game == EGame.GAME_DaysGone) Ar.SkipFixedArray(4);
 
         if (Ar.Game == EGame.GAME_Undawn)
         {
@@ -125,20 +127,16 @@ public class FStaticMeshRenderData
             Ar.Position += 4; // MaxStreamingTextureFactor
         }
 
-        if (Ar.Game == EGame.GAME_FragPunk)
-        {
-            ScreenSize = new float[16];
-            for (var i = 0; i < 16; i++)
-            {
-                var bFloatCooked = Ar.ReadBoolean();
-                ScreenSize[i] = Ar.Read<float>();
-            }
-            return;
-        }
-
         if (Ar.Game == EGame.GAME_DeltaForceHawkOps) Ar.Position += 4;
 
-        ScreenSize = new float[Ar.Game >= EGame.GAME_UE4_9 ? MAX_STATIC_LODS_UE4 : 4];
+        var screenSizeLength = Ar.Game switch
+        {
+            EGame.GAME_FragPunk => 16,
+            EGame.GAME_Stalker2 => 14,
+            >= EGame.GAME_UE4_9 => MAX_STATIC_LODS_UE4,
+            _ => 4
+        };
+        ScreenSize = new float[screenSizeLength];
         for (var i = 0; i < ScreenSize.Length; ++i)
         {
             if (Ar.Game >= EGame.GAME_UE4_20) // FPerPlatformProperty
@@ -159,6 +157,29 @@ public class FStaticMeshRenderData
             {
                 var count2 = Ar.Read<byte>();
                 Ar.Position += count2 * 12; // bool, bool, float
+            }
+        }
+
+        if (Ar.Game == EGame.GAME_DaysGone)
+        {
+            const float packed64scale = 2.0f / ushort.MaxValue;
+            const float packed32scale = 2.0f / 1024;
+            var offset = Bounds.Origin - Bounds.BoxExtent;
+            var scale = Bounds.BoxExtent;
+            foreach (var lod in LODs)
+            {
+                var perlodscale = lod.PositionVertexBuffer?.Stride switch
+                {
+                    4 => scale * packed32scale,
+                    8 => scale * packed64scale,
+                    12 => scale,
+                    _ => throw new ArgumentOutOfRangeException($"Unknown stride {lod.PositionVertexBuffer?.Stride} for FPositionVertexBuffer")
+                };
+
+                for (var i = 0; i < lod.PositionVertexBuffer.NumVertices; i++)
+                {
+                    lod.PositionVertexBuffer.Verts[i] = lod.PositionVertexBuffer.Verts[i] * perlodscale + offset;
+                }
             }
         }
 
