@@ -826,6 +826,72 @@ namespace CUE4Parse.FileProvider
             var package = await LoadPackageAsync(path).ConfigureAwait(false);
             return package.GetExports();
         }
+
+        [Obsolete("use LoadPackageObject() instead")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UObject LoadObject(string? path)
+        {
+            ArgumentException.ThrowIfNullOrEmpty("path", path);
+            return LoadPackageObject(path!);
+        }
+
+        [Obsolete("use LoadPackageObjectAsync() instead")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async Task<UObject> LoadObjectAsync(string? path)
+        {
+            ArgumentException.ThrowIfNullOrEmpty("path", path);
+            return await LoadPackageObjectAsync(path!);
+        }
+
+        [Obsolete("use SafeLoadPackageObject() instead")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UObject? TryLoadObject(string? path)
+        {
+            ArgumentException.ThrowIfNullOrEmpty("path", path);
+            return LoadPackageObject(path!);
+        }
+
+        [Obsolete("use SafeLoadPackageObjectAsync() instead")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async Task<UObject?> TryLoadObjectAsync(string? path)
+        {
+            ArgumentException.ThrowIfNullOrEmpty("path", path);
+            return await LoadPackageObjectAsync(path!);
+        }
+
+
+        [Obsolete("use LoadPackageObject<T>() instead")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T LoadObject<T>(string? path) where T : UObject
+        {
+            ArgumentException.ThrowIfNullOrEmpty("path", path);
+            return LoadPackageObject<T>(path!);
+        }
+
+        [Obsolete("use LoadPackageObjectAsync<T>() instead")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async Task<T> LoadObjectAsync<T>(string? path) where T : UObject
+        {
+            ArgumentException.ThrowIfNullOrEmpty("path", path);
+            return await LoadPackageObjectAsync<T>(path!);
+        }
+
+        [Obsolete("use SafeLoadPackageObject<T>() instead")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T? TryLoadObject<T>(string? path) where T : UObject
+        {
+            ArgumentException.ThrowIfNullOrEmpty("path", path);
+            return LoadPackageObject<T>(path!);
+        }
+
+        [Obsolete("use SafeLoadPackageObjectAsync<T>() instead")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async Task<T?> TryLoadObjectAsync<T>(string? path) where T : UObject
+        {
+            ArgumentException.ThrowIfNullOrEmpty("path", path);
+            return await LoadPackageObjectAsync<T>(path);
+        }
+
         #endregion
 
         public virtual void Dispose()
